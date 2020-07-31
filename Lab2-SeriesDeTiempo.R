@@ -46,20 +46,64 @@ data2$Diesel = data2$Diesel + data2$DieselLS
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 #Se crea la serie de tiempo
 myts <- ts(myvector, start=c(2009, 1), end=c(2014, 12), frequency=12)
 myts2 <- window(myts, start=c(2014, 6), end=c(2014, 12))
 
 # plot series
 plot(myts)
+
+
+
+
+# SECCION GAS
+# new dataframe para gas regular
+gasRegImp <- data.frame(datosImp$GasRegular) 
+names(gasRegImp)[1] <- "GasRegular"
+gasRegImp
+gasRegImp<-gasRegImp[!(grepl("Gasolina",gasRegImp$GasRegular)),]
+
+# Convertion to numerics
+gasRegImp <- str_replace_all(gasRegImp, ",","")
+gasRegImp <- as.numeric(gasRegImp)
+gasRegImp[is.na(gasRegImp)] <- 0
+
+# Convertion to time series
+gasRegImp <- ts(gasRegImp, frequency = 12, start = 2001)
+gasRegImp
+
+start(gasRegImp)
+end(gasRegImp)
+frequency(gasRegImp)
+
+# plot
+plot(gasRegImp)
+abline(reg=lm(gasRegImp~time(gasRegImp)), col=c("red"))
+
+# decompose
+plot(aggregate(gasRegImp,FUN=mean))
+dec.gasRegImp <- decompose(gasRegImp)
+plot(dec.gasRegImp)
+
+# transformar a logaritmica
+logGasRegImp <- log(gasRegImp)
+plot(decompose(logGasRegImp))
+
+# Augmented Dickey-Fuller Test
+adfTest(logGasRegImp)
+adfTest(diff(logGasRegImp))
+
+# autocorrelación
+acf(logGasRegImp)
+
+# funciones de autocorrelación y autocorrelación parcial
+acf(diff(logGasRegImp),12)
+pacf(diff(logGasRegImp))
+
+# Modelo
+auto.arima(logGasRegImp, D=1) #auto arima con estacionalidad forzada
+
+fit <- arima(logGasRegImp, c(2, 0, 1), seasonal = list(order=c(1,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 3*12)
+autoplot(forecastAP)
+

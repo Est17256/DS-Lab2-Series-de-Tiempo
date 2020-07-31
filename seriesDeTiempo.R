@@ -9,6 +9,7 @@ library(ggfortify)
 
 data("AirPassengers")
 class(AirPassengers)
+AirPassengers
 #Saber cuando empieza la serie y cuando termina
 start(AirPassengers)
 end(AirPassengers)
@@ -41,7 +42,7 @@ pacf(diff(logAirPassengers))
 
 # Hacer el modelo
 
-auto.arima(AirPassengers)
+auto.arima(logAirPassengers)
 
 fit <- arima(log(AirPassengers), c(0, 1, 1),seasonal = list(order = c(0, 1, 1), period = 12))
 pred <- predict(fit, n.ahead = 10*12)
