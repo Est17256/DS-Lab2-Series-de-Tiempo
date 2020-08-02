@@ -43,29 +43,49 @@ data$Diesel<-gsub(",","",data$Diesel)
 data$Diesel<-as.numeric(data$Diesel)
 data$DieselLS<-as.character(levels(data$DieselLS))[data$DieselLS]
 data$DieselLS[data$DieselLS =="-"] <- 0
-data2 = data
+data$DieselLS<-gsub(",","",data$DieselLS)
+data$DieselLS<-as.numeric(data$DieselLS)
+DataLimpia = data
+DataLimpia$Diesel = DataLimpia$Diesel + DataLimpia$DieselLS
 
-#COnvertir
-options(digits=9)
-data2$Anio = as.numeric(data2$Anio)
-data2$Mes = as.numeric(data2$Mes)
-data2$Diesel = as.numeric(gsub(",", "", data2$Diesel))
-data2$DieselLS = as.numeric(gsub(",", "", data2$DieselLS))
-data$Diesel[data$Diesel =="-"] <- 0
-data$DieselLS[data$DieselLS =="-"] <- 0
-data2 = data
-#Unir Diesel
-data2$Diesel = data2$Diesel + data2$DieselLS
+#Seccion Diesel
+sDiesel <- ts(DataLimpia$Diesel, start=c(2001, 1), end=c(2020, 3), frequency=12)
+sDiesel
 
-
-
-#Se crea la serie de tiempo
-myts <- ts(myvector, start=c(2009, 1), end=c(2014, 12), frequency=12)
-myts2 <- window(myts, start=c(2014, 6), end=c(2014, 12))
+start(sDiesel)
+end(sDiesel)
+frequency(sDiesel)
 
 # plot series
-plot(myts)
+plot(sDiesel)
+abline(reg=lm(sDiesel~time(sDiesel)), col=c("red"))
 
+# decompose
+plot(aggregate(sDiesel,FUN=mean))
+dec.sDiesel <- decompose(sDiesel)
+plot(dec.sDiesel)
+
+# transformar a logaritmica
+logsDiesel <- log(sDiesel)
+plot(decompose(logsDiesel))
+
+# Augmented Dickey-Fuller Test =1
+adfTest(logsDiesel)
+adfTest(diff(logsDiesel))
+
+# autocorrelación
+acf(logsDiesel,12)
+
+# funciones de autocorrelación y autocorrelación parcial
+acf(diff(logsDiesel),12)
+pacf(diff(logsDiesel))
+
+# Modelo
+auto.arima(logsDiesel, D=1)
+
+fit <- arima(logsDiesel, c(2, 0, 0), seasonal = list(order=c(1,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 3*12)
+autoplot(forecastAP)
 
 
 
