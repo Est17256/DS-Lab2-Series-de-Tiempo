@@ -83,11 +83,60 @@ pacf(diff(logsDiesel))
 # Modelo
 auto.arima(logsDiesel, D=1)
 
-fit <- arima(logsDiesel, c(2, 0, 0), seasonal = list(order=c(1,1,0), perdiod = 12))
-forecastAP <- forecast(fit, level = c(95), h = 3*12)
+fit <- arima(logsDiesel, c(2, 0, 0), seasonal = list(order=c(2,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 5*12)
 autoplot(forecastAP)
 
+#Prediccion de anio 2018,2019,2020
 
+DataLimpia2<-DataLimpia[DataLimpia$Anio!="2018",]
+DataLimpia2<-DataLimpia2[DataLimpia2$Anio!="2019",]
+DataLimpia2<-DataLimpia2[DataLimpia2$Anio!="2020",]
+sDieselPred <- ts(DataLimpia2$Diesel, start=c(2001, 1), end=c(2017, 12), frequency=12)
+sDieselPred
+logsDieselPred <- log(sDieselPred)
+auto.arima(logsDieselPred, D=1)
+fit <- arima(logsDieselPred, c(2, 0, 2), seasonal = list(order=c(1,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 2*12)
+autoplot(forecastAP)
+
+#Predicion 2020
+DataLimpia3<-DataLimpia[DataLimpia$Anio!="2020",]
+
+sDieselPred2 <- ts(DataLimpia3$Diesel, start=c(2001, 1), end=c(2019, 12), frequency=12)
+sDieselPred2
+logsDieselPred2 <- log(sDieselPred2)
+auto.arima(logsDieselPred2, D=1)
+fit <- arima(logsDieselPred2, c(2, 0, 0), seasonal = list(order=c(2,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 1*12)
+autoplot(forecastAP)
+#Preparacion para modelo Prophet
+PruebaData<-DataLimpia
+PruebaData$Anio<-as.character(levels(PruebaData$Anio))[PruebaData$Anio]
+PruebaData$Mes<-as.character(levels(PruebaData$Mes))[PruebaData$Mes]
+PruebaData$Mes[PruebaData$Mes =="1"] <- "01-01"
+PruebaData$Mes[PruebaData$Mes =="2"] <- "02-01"
+PruebaData$Mes[PruebaData$Mes =="3"] <- "03-01"
+PruebaData$Mes[PruebaData$Mes =="4"] <- "04-01"
+PruebaData$Mes[PruebaData$Mes =="5"] <- "05-01"
+PruebaData$Mes[PruebaData$Mes =="6"] <- "06-01"
+PruebaData$Mes[PruebaData$Mes =="7"] <- "07-01"
+PruebaData$Mes[PruebaData$Mes =="8"] <- "08-01"
+PruebaData$Mes[PruebaData$Mes =="9"] <- "09-01"
+PruebaData$Mes[PruebaData$Mes =="10"] <- "10-01"
+PruebaData$Mes[PruebaData$Mes =="11"] <- "11-01"
+PruebaData$Mes[PruebaData$Mes =="12"] <- "12-01"
+PruebaData$Anio<-paste(PruebaData$Anio, PruebaData$Mes, sep="-")
+PruebaData2<-PruebaData[,c("Anio","Diesel")]
+names(PruebaData2)=c("ds","y")
+
+#Modelo Prophet
+library(prophet)
+fitProphet<-prophet(PruebaData2,yearly.seasonality = T,weekly.seasonality = T)
+future <- make_future_dataframe(fitProphet,periods =1,freq = "month", include_history = T)
+p <- predict(fitProphet,future)
+p<-p[,c("ds","yhat","yhat_lower","yhat_upper")]
+plot(fitProphet,p)
 
 # SECCION GAS
 # new dataframe para gas regular
