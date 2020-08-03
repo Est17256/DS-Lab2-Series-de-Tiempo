@@ -14,6 +14,7 @@ library(forecast)
 library(tseries)
 library(fUnitRoots)
 library(ggfortify)
+library(prophet)
 
 ########## Lectura de PDF ##########
 
@@ -110,6 +111,7 @@ auto.arima(logsDieselPred2, D=1)
 fit <- arima(logsDieselPred2, c(2, 0, 0), seasonal = list(order=c(2,1,0), perdiod = 12))
 forecastAP <- forecast(fit, level = c(95), h = 1*12)
 autoplot(forecastAP)
+
 #Preparacion para modelo Prophet
 PruebaData<-DataLimpia
 PruebaData$Anio<-as.character(levels(PruebaData$Anio))[PruebaData$Anio]
@@ -130,6 +132,8 @@ PruebaData$Anio<-paste(PruebaData$Anio, PruebaData$Mes, sep="-")
 PruebaData2<-PruebaData[,c("Anio","Diesel")]
 names(PruebaData2)=c("ds","y")
 
+PruebaData2
+
 #Modelo Prophet
 library(prophet)
 fitProphet<-prophet(PruebaData2,yearly.seasonality = T,weekly.seasonality = T)
@@ -138,7 +142,7 @@ p <- predict(fitProphet,future)
 p<-p[,c("ds","yhat","yhat_lower","yhat_upper")]
 plot(fitProphet,p)
 
-# SECCION GAS
+# SECCION GAS REGULAR
 # new dataframe para gas regular
 gasRegImp <- data.frame(datosImp$GasRegular) 
 names(gasRegImp)[1] <- "GasRegular"
@@ -182,10 +186,26 @@ acf(logGasRegImp)
 acf(diff(logGasRegImp),12)
 pacf(diff(logGasRegImp))
 
-# Modelo
+# Modelo ARIMA
 auto.arima(logGasRegImp, D=1) #auto arima con estacionalidad forzada
 
 fit <- arima(logGasRegImp, c(2, 0, 1), seasonal = list(order=c(1,1,0), perdiod = 12))
 forecastAP <- forecast(fit, level = c(95), h = 3*12)
 autoplot(forecastAP)
+
+# Modelo Prophet
+# data
+gasRegImp4proph <- data.frame(paste(datosImp$Mes, '- 1 -',datosImp$Anio), datosImp$GasRegular) 
+names(gasRegImp4proph)[1] <- "ds"
+names(gasRegImp4proph)[2] <- "y"
+gasRegImp4proph<-gasRegImp4proph[!(grepl("Gasolina",gasRegImp4proph$y)),]
+gasRegImp4proph$ds <- as.Date(gasRegImp4proph$ds , format = "%m - %d - %y")
+gasRegImp4proph
+
+#modelo
+fitProphet<-prophet(gasRegImp_4prophet,yearly.seasonality = T, weekly.seasonality = T)
+future <- make_future_dataframe(fitProphet,periods =1,freq = "month", include_history = T)
+p <- predict(fitProphet,future)
+p<-p[,c("ds","yhat","yhat_lower","yhat_upper")]
+plot(fitProphet,p)
 
