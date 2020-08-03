@@ -209,3 +209,64 @@ p <- predict(fitProphet,future)
 p<-p[,c("ds","yhat","yhat_lower","yhat_upper")]
 plot(fitProphet,p)
 
+#Sección Gas Super
+gasSuper <- data.frame(datosImp$GasSuperior)
+names(gasSuper)[1] <- "GasSuperior"
+gasSuper
+gasSuper<-gasSuper[!(grepl("Gasolina",gasSuper$GasSuperior)),]
+
+gasSuper <- str_replace_all(gasSuper, ",","")
+gasSuper <- as.numeric(gasSuper)
+gasSuper[is.na(gasSuper)] <- 0
+
+gasSuper <- ts(gasSuper, frequency = 12, start = 2001)
+gasSuper
+
+start(gasSuper)
+end(gasSuper)
+frequency(gasSuper)
+
+# plot
+plot(gasSuper)
+abline(reg=lm(gasSuper~time(gasSuper)), col=c("red"))
+
+#Descomposición de la serie de tiempo
+plot(aggregate(gasSuper,FUN=mean))
+dec.gasSuper <- decompose(gasSuper)
+plot(dec.gasSuper)
+
+# transformación a logaritmo
+loggasSuper <- log(gasSuper)
+plot(decompose(loggasSuper))
+
+# Pruba de Dickey-Fuller
+adfTest(loggasSuper)
+adfTest(diff(loggasSuper))
+
+# autocorrelación
+acf(loggasSuper)
+pacf(loggasSuper)
+
+# funciones de autocorrelación y autocorrelación parcial
+acf(diff(loggasSuper),12)
+pacf(diff(loggasSuper))
+
+# Modelo
+auto.arima(loggasSuper, D=1)
+
+fit <- arima(loggasSuper, c(1, 0, 0), seasonal = list(order=c(1,1,0), perdiod = 12))
+forecastAP <- forecast(fit, level = c(95), h = 3*12)
+autoplot(forecastAP)
+
+
+#Modelo Prophet 
+df<-data.frame(ds=as.Date(as.yearmon(time(gasSuper))),y=as.matrix(gasSuper) )
+head(df)
+fitProphet<-prophet(df,yearly.seasonality = T,weekly.seasonality = T)
+future <- make_future_dataframe(fitProphet,periods = 12,freq = "month", include_history = T)
+p <- predict(fitProphet,future)
+p<-p[,c("ds","yhat","yhat_lower","yhat_upper")]
+plot(fitProphet,p)
+
+
+
